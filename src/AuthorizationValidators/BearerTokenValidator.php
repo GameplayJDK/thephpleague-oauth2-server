@@ -113,6 +113,12 @@ class BearerTokenValidator implements AuthorizationValidatorInterface
 
         // TODO: The below check breaks the decoupling of resource server and authorization server. Maybe make it
         //  optional? Create an issue for that!
+        //   -> The proposed solution from
+        //      https://github.com/thephpleague/oauth2-server/issues/579#issuecomment-218992380 is to use a custom
+        //      AccessTokenRepositoryInterface implementation and return always false on isAccessTokenRevoked() calls or
+        //      to provide an introspection api as defined by https://tools.ietf.org/html/rfc7662.
+        //      For now the solution taken here is to add a custom BearerTokenValidator class in the
+        //      made/oauth2-server-extra package (same name, different namespace).
 
         // Check if token has been revoked
         if ($this->accessTokenRepository->isAccessTokenRevoked($claims->get('jti'))) {

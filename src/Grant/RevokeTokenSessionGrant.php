@@ -20,7 +20,4 @@ class RevokeTokenSessionGrant extends RevokeTokenGrant
 
     // TODO: Find the session by the refresh token to revoke in case that's desired.
     // TODO: Allow revocation of the session token itself, make sure there is no new session persisted after that.
-    // TODO: Make sure this also accepts the standard 'revoke_token' grant!
-
-
 }

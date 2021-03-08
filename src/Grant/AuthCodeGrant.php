@@ -182,13 +182,17 @@ class AuthCodeGrant extends AbstractAuthorizeGrant
     /**
      * Validate the authorization code.
      *
+     * TODO: There is an open issue on making this method protected in the upstream repository to allow more flexibility
+     *  for the validation, see https://github.com/thephpleague/oauth2-server/issues/1199. Until resolved, this hotfix
+     *  class will have to be used instead of the original one (assuming this file to be part of a project).
+     *
      * @param stdClass               $authCodePayload
      * @param ClientEntityInterface  $client
      * @param ServerRequestInterface $request
      *
      * @throws OAuthServerException
      */
-    protected function validateAuthorizationCode( // TODO: Create an issue for this (change visibility to protected)!
+    protected function validateAuthorizationCode(
         $authCodePayload,
         ClientEntityInterface $client,
         ServerRequestInterface $request
