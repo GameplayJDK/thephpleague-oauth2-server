@@ -185,8 +185,10 @@ class AuthCodeGrant extends AbstractAuthorizeGrant
      * @param stdClass               $authCodePayload
      * @param ClientEntityInterface  $client
      * @param ServerRequestInterface $request
+     *
+     * @throws OAuthServerException
      */
-    private function validateAuthorizationCode(
+    protected function validateAuthorizationCode( // TODO: Create an issue for this (change visibility to protected)!
         $authCodePayload,
         ClientEntityInterface $client,
         ServerRequestInterface $request

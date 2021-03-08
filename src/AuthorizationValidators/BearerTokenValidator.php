@@ -111,6 +111,9 @@ class BearerTokenValidator implements AuthorizationValidatorInterface
 
         $claims = $token->claims();
 
+        // TODO: The below check breaks the decoupling of resource server and authorization server. Maybe make it
+        //  optional? Create an issue for that!
+
         // Check if token has been revoked
         if ($this->accessTokenRepository->isAccessTokenRevoked($claims->get('jti'))) {
             throw OAuthServerException::accessDenied('Access token has been revoked');
