@@ -10,6 +10,7 @@
 namespace League\OAuth2\Server\Grant\Traits;
 
 use DateInterval;
+use Exception;
 use League\OAuth2\Server\Entities\AccessTokenEntityInterface;
 use League\OAuth2\Server\Entities\AuthCodeEntityInterface;
 use League\OAuth2\Server\Entities\ClientEntityInterface;
@@ -19,7 +20,10 @@ use League\OAuth2\Server\Entities\SessionEntityInterface;
 use League\OAuth2\Server\Exception\OAuthServerException;
 use League\OAuth2\Server\Exception\UniqueTokenIdentifierConstraintViolationException;
 use League\OAuth2\Server\Repositories\SessionRepositoryInterface;
+use League\OAuth2\Server\RequestTypes\AuthorizationRequest;
+use League\OAuth2\Server\RequestTypes\AuthorizationWithSessionRequest;
 use League\OAuth2\Server\ResponseTypes\ResponseTypeInterface;
+use LogicException;
 use Psr\Http\Message\ServerRequestInterface;
 
 trait SessionAwareTrait
@@ -43,15 +47,12 @@ trait SessionAwareTrait
     }
 
     /**
-     * @param ServerRequestInterface $request
+     * @param string|null $sessionToken
+     *
      * @return SessionEntityInterface
      */
-    protected function getNewOrExistingSession(ServerRequestInterface $request)
+    protected function getNewOrExistingSession($sessionToken)
     {
-        $sessionToken = $this->getRequestParameter('session_token', $request, null);
-
-        // TODO: Do $this->decrypt($sessionToken) and use payload instead.
-
         if (null !== $sessionToken) {
             $session = $this->sessionRepository->getSessionEntityByIdentifier($sessionToken);
         }
@@ -96,8 +97,8 @@ trait SessionAwareTrait
      * Respond to an access token request.
      *
      * @param ServerRequestInterface $request
-     * @param ResponseTypeInterface $responseType
-     * @param DateInterval $accessTokenTTL
+     * @param ResponseTypeInterface  $responseType
+     * @param DateInterval           $accessTokenTTL
      *
      * @throws OAuthServerException
      *
@@ -108,9 +109,9 @@ trait SessionAwareTrait
         ResponseTypeInterface $responseType,
         DateInterval $accessTokenTTL
     ) {
-        // TODO: Get 'session' parameter and validate client. Set session also here.
+        $sessionToken = $this->getRequestParameter('session', $request, null);
 
-        $this->session = $this->getNewOrExistingSession($request);
+        $this->session = $this->getNewOrExistingSession($sessionToken);
 
         try {
             $responseType = parent::respondToAccessTokenRequest($request, $responseType, $accessTokenTTL);
@@ -127,11 +128,85 @@ trait SessionAwareTrait
     }
 
     /**
+     * Convert the AuthorizationRequest to a new instance of AuthorizationWithSessionRequest.
+     *
+     * @param AuthorizationRequest   $authorizationRequest
+     *
+     * @return AuthorizationWithSessionRequest
+     */
+    protected function convertToSessionCompatibleAuthorizationRequest(AuthorizationRequest $authorizationRequest) {
+        $newAuthRequest = new AuthorizationWithSessionRequest();
+        $newAuthRequest->setGrantTypeId($authorizationRequest->getGrantTypeId());
+        $newAuthRequest->setClient($authorizationRequest->getClient());
+        $newAuthRequest->setUser($authorizationRequest->getUser());
+        $newAuthRequest->setScopes($authorizationRequest->getScopes());
+        $newAuthRequest->setAuthorizationApproved($authorizationRequest->isAuthorizationApproved());
+        $newAuthRequest->setRedirectUri($authorizationRequest->getRedirectUri());
+        $newAuthRequest->setState($authorizationRequest->getState());
+        $newAuthRequest->setCodeChallenge($authorizationRequest->getCodeChallenge());
+        $newAuthRequest->setCodeChallengeMethod($authorizationRequest->getCodeChallengeMethod());
+
+        return $newAuthRequest;
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function validateAuthorizationRequest(ServerRequestInterface $request)
+    {
+        $authorizationRequest = parent::validateAuthorizationRequest($request);
+
+        // This will be the case in almost any constellation, but better save than sorry
+        if ($authorizationRequest instanceof AuthorizationWithSessionRequest === false) {
+            $authorizationRequest = $this->convertToSessionCompatibleAuthorizationRequest($authorizationRequest);
+
+            // Set the session token
+            $authorizationRequest->setSession($this->getRequestParameter('session', $request, null));
+        }
+
+        return $authorizationRequest;
+    }
+
+    /**
+     * Once a user has authenticated and authorized the client the grant can complete the authorization request.
+     * The AuthorizationRequest object's $userId property must be set to the authenticated user and the
+     * $authorizationApproved property must reflect their desire to authorize or deny the client.
+     *
+     * @param AuthorizationRequest $authorizationRequest
+     *
+     * @throws LogicException
+     * @throws OAuthServerException
+     *
+     * @return ResponseTypeInterface
+     */
+    public function completeAuthorizationRequest(AuthorizationRequest $authorizationRequest)
+    {
+        if ($authorizationRequest instanceof AuthorizationWithSessionRequest === false) {
+            throw new LogicException('An instance of AuthorizationWithSessionRequest must be provided');
+        }
+
+        $this->session = $this->getNewOrExistingSession($authorizationRequest->getSession());
+
+        try {
+            $responseType = parent::completeAuthorizationRequest($authorizationRequest);
+        } catch (Exception $e) {
+            throw $e;
+        } finally {
+            $this->persistNewOrExistingSession($this->session);
+
+            unset($this->session);
+            $this->session = null;
+        }
+
+        return $responseType;
+    }
+
+    /**
      * Issue an access token.
      *
-     * @param DateInterval $accessTokenTTL
-     * @param ClientEntityInterface $client
-     * @param string|null $userIdentifier
+     * @param DateInterval           $accessTokenTTL
+     * @param ClientEntityInterface  $client
+     * @param string|null            $userIdentifier
      * @param ScopeEntityInterface[] $scopes
      *
      * @throws OAuthServerException
@@ -157,10 +232,10 @@ trait SessionAwareTrait
     /**
      * Issue an auth code.
      *
-     * @param DateInterval $authCodeTTL
-     * @param ClientEntityInterface $client
-     * @param string $userIdentifier
-     * @param string|null $redirectUri
+     * @param DateInterval           $authCodeTTL
+     * @param ClientEntityInterface  $client
+     * @param string                 $userIdentifier
+     * @param string|null            $redirectUri
      * @param ScopeEntityInterface[] $scopes
      *
      * @throws OAuthServerException

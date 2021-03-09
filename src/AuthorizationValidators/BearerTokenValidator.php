@@ -23,6 +23,8 @@ use Lcobucci\JWT\Validation\Constraint\ValidAt;
 use Lcobucci\JWT\Validation\RequiredConstraintsViolated;
 use League\OAuth2\Server\CryptKey;
 use League\OAuth2\Server\CryptTrait;
+use League\OAuth2\Server\Entities\AccessTokenEntityInterface;
+use League\OAuth2\Server\Entities\ClientEntityInterface;
 use League\OAuth2\Server\Exception\OAuthServerException;
 use League\OAuth2\Server\Repositories\AccessTokenRepositoryInterface;
 use Psr\Http\Message\ServerRequestInterface;
@@ -49,8 +51,43 @@ class BearerTokenValidator implements AuthorizationValidatorInterface
     /**
      * @param AccessTokenRepositoryInterface $accessTokenRepository
      */
-    public function __construct(AccessTokenRepositoryInterface $accessTokenRepository)
+    public function __construct(AccessTokenRepositoryInterface $accessTokenRepository = null)
     {
+        if ($accessTokenRepository === null) {
+            $accessTokenRepository = new class() implements AccessTokenRepositoryInterface {
+                /**
+                 * {@inheritdoc}
+                 */
+                public function getNewToken(ClientEntityInterface $clientEntity, array $scopes, $userIdentifier = null)
+                {
+                    // TODO: Throw an exception instead of returning null.
+                    return null;
+                }
+
+                /**
+                 * {@inheritdoc}
+                 */
+                public function persistNewAccessToken(AccessTokenEntityInterface $accessTokenEntity)
+                {
+                }
+
+                /**
+                 * {@inheritdoc}
+                 */
+                public function revokeAccessToken($tokenId)
+                {
+                }
+
+                /**
+                 * {@inheritdoc}
+                 */
+                public function isAccessTokenRevoked($tokenId)
+                {
+                    return false;
+                }
+            };
+        }
+
         $this->accessTokenRepository = $accessTokenRepository;
     }
 
@@ -119,6 +156,7 @@ class BearerTokenValidator implements AuthorizationValidatorInterface
         //      to provide an introspection api as defined by https://tools.ietf.org/html/rfc7662.
         //      For now the solution taken here is to add a custom BearerTokenValidator class in the
         //      made/oauth2-server-extra package (same name, different namespace).
+        //      For now: Just use this hotfix class.
 
         // Check if token has been revoked
         if ($this->accessTokenRepository->isAccessTokenRevoked($claims->get('jti'))) {
