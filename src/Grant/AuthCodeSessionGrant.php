@@ -35,6 +35,7 @@ class AuthCodeSessionGrant extends AuthCodeGrant
     ) {
         parent::validateAuthorizationCode($authCodePayload, $client, $request);
 
+        // TODO: Do not use repository here, rather compare session linked contents to the id.
         $session = $this->sessionRepository->getSessionEntityByAuthCodeIdentifier($authCodePayload->auth_code_id);
         // The session from the auth code takes precedence over the provided session id
         if (!\is_null($session)

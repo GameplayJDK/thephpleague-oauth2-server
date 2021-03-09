@@ -30,6 +30,7 @@ class RefreshTokenSessionGrant extends RefreshTokenGrant
     {
         $refreshTokenData = parent::validateOldRefreshToken($request, $clientId);
 
+        // TODO: Do not use repository here, rather compare session linked contents to the id.
         $session = $this->sessionRepository->getSessionEntityByRefreshTokenIdentifier(
             $refreshTokenData['refresh_token_id']);
         // The session from the auth code takes precedence over the provided session id

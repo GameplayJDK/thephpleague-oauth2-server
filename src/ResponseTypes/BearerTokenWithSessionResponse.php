@@ -20,6 +20,25 @@ class BearerTokenWithSessionResponse extends BearerTokenResponse
     protected $session;
 
     /**
+     * @param ResponseTypeInterface|null $responseType
+     */
+    public function __construct(ResponseTypeInterface $responseType = null)
+    {
+        if ($responseType instanceof AbstractResponseType) {
+            $this->setAccessToken($responseType->accessToken);
+            $this->setRefreshToken($responseType->refreshToken);
+
+            $this->setPrivateKey($responseType->privateKey);
+
+            $this->setEncryptionKey($responseType->encryptionKey);
+        }
+
+        if ($responseType instanceof self && !\is_null($responseType->session)) {
+            $this->setSession($responseType->session);
+        }
+    }
+
+    /**
      * @param SessionEntityInterface $session
      */
     public function setSession(SessionEntityInterface $session)

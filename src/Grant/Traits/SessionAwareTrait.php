@@ -22,6 +22,8 @@ use League\OAuth2\Server\Exception\UniqueTokenIdentifierConstraintViolationExcep
 use League\OAuth2\Server\Repositories\SessionRepositoryInterface;
 use League\OAuth2\Server\RequestTypes\AuthorizationRequest;
 use League\OAuth2\Server\RequestTypes\AuthorizationWithSessionRequest;
+use League\OAuth2\Server\ResponseTypes\BearerTokenResponse;
+use League\OAuth2\Server\ResponseTypes\BearerTokenWithSessionResponse;
 use League\OAuth2\Server\ResponseTypes\ResponseTypeInterface;
 use LogicException;
 use Psr\Http\Message\ServerRequestInterface;
@@ -122,6 +124,11 @@ trait SessionAwareTrait
 
             unset($this->session);
             $this->session = null;
+        }
+
+        if ($responseType instanceof BearerTokenResponse
+            && $responseType instanceof BearerTokenWithSessionResponse === false) {
+            $responseType = new BearerTokenWithSessionResponse($responseType);
         }
 
         return $responseType;
