@@ -50,7 +50,11 @@ trait SessionAwareTrait
     }
 
     /**
+     * Get new or existing session entity by identifier.
+     *
      * @param string|null $sessionToken
+     *
+     * @throws OAuthServerExtraException
      *
      * @return SessionEntityInterface
      */
@@ -71,6 +75,8 @@ trait SessionAwareTrait
     }
 
     /**
+     * Persist new or existing session entity.
+     *
      * @param SessionEntityInterface $session
      *
      * @throws UniqueTokenIdentifierConstraintViolationException

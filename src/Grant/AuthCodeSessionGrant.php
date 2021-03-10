@@ -10,6 +10,7 @@
 namespace League\OAuth2\Server\Grant;
 
 use League\OAuth2\Server\Entities\ClientEntityInterface;
+use League\OAuth2\Server\Exception\OAuthServerException;
 use League\OAuth2\Server\Exception\OAuthServerExtraException;
 use League\OAuth2\Server\Grant\Traits\SessionAwareTrait;
 use Psr\Http\Message\ServerRequestInterface;
@@ -17,7 +18,6 @@ use stdClass;
 
 class AuthCodeSessionGrant extends AuthCodeGrant
 {
-    // TODO: Fix the use of trait methods using the insteadof statement.
     use SessionAwareTrait;
 
     /**
@@ -27,7 +27,8 @@ class AuthCodeSessionGrant extends AuthCodeGrant
      * @param ClientEntityInterface  $client
      * @param ServerRequestInterface $request
      *
-     * @throw OAuthServerException
+     * @throws OAuthServerException
+     * @throws OAuthServerExtraException
      */
     protected function validateAuthorizationCode(
         $authCodePayload,
@@ -37,15 +38,16 @@ class AuthCodeSessionGrant extends AuthCodeGrant
         parent::validateAuthorizationCode($authCodePayload, $client, $request);
 
         if ($this->sessionRepository->isSessionPersisted($this->session)) {
+            // The provided session id has to contain the auth code
             $linkedAuthCodes = $this->session->getLinkedAuthCodes();
+
             foreach ($linkedAuthCodes as $linkedAuthCode) {
                 if ($linkedAuthCode->getIdentifier() === $authCodePayload->auth_code_id) {
                     return;
                 }
             }
 
-            // TODO
-            throw OAuthServerExtraException::invalidSession('given auth code not linked to provided session');
+            throw OAuthServerExtraException::invalidSession('Session is not linked to the auth code.');
         }
     }
 }

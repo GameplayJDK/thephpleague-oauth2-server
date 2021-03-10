@@ -27,6 +27,32 @@ class OAuthServerExtraException extends OAuthServerException
         $errorMessage = 'The authorization server does not support the revocation of the presented token type.';
         $hint = ($hint === null) ? \sprintf('Check the presented token type `%s`', $tokenType) : $hint;
 
-        return new static($errorMessage, 11, 'unsupported_token_type', 400, $hint, null, $previous);
+        return new static(
+            $errorMessage,
+            11,
+            'unsupported_token_type',
+            400,
+            $hint,
+            null,
+            $previous
+        );
+    }
+
+    /**
+     * Invalid session token.
+     *
+     * @param string|null $hint
+     *
+     * @return static
+     */
+    public static function invalidSession(string $hint = null)
+    {
+        return new static(
+            'The provided session token is invalid.',
+            12,
+            'invalid_request',
+            400,
+            $hint
+        );
     }
 }

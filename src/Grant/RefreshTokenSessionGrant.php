@@ -17,14 +17,14 @@ use Psr\Http\Message\ServerRequestInterface;
 
 class RefreshTokenSessionGrant extends RefreshTokenGrant
 {
-    // TODO: Fix the use of trait methods using the insteadof statement.
     use SessionAwareTrait;
 
     /**
      * @param ServerRequestInterface $request
-     * @param string $clientId
+     * @param string                 $clientId
      *
      * @throws OAuthServerException
+     * @throws OAuthServerExtraException
      *
      * @return array
      */
@@ -33,15 +33,16 @@ class RefreshTokenSessionGrant extends RefreshTokenGrant
         $refreshTokenData = parent::validateOldRefreshToken($request, $clientId);
 
         if ($this->sessionRepository->isSessionPersisted($this->session)) {
-            $linkedRefreshTokens = $this->session->getLinkedAuthCodes();
+            // The provided session id has to contain the auth code
+            $linkedRefreshTokens = $this->session->getLinkedRefreshTokens();
+
             foreach ($linkedRefreshTokens as $linkedRefreshToken) {
                 if ($linkedRefreshToken->getIdentifier() === $refreshTokenData['refresh_token_id']) {
                     return $refreshTokenData;
                 }
             }
 
-            // TODO
-            throw OAuthServerExtraException::invalidSession('given refresh token not linked to provided session');
+            throw OAuthServerExtraException::invalidSession('Session is not linked to the refresh token.');
         }
 
         return $refreshTokenData;
