@@ -41,27 +41,6 @@ interface SessionRepositoryInterface
     public function getSessionEntityByIdentifier($identifier);
 
     /**
-     * @param string $authCode
-     *
-     * @return SessionEntityInterface|null
-     */
-    public function getSessionEntityByAuthCodeIdentifier($authCode);
-
-    /**
-     * @param string $accessToken
-     *
-     * @return SessionEntityInterface|null
-     */
-    public function getSessionEntityByAccessTokenIdentifier($accessToken);
-
-    /**
-     * @param string $refreshToken
-     *
-     * @return SessionEntityInterface|null
-     */
-    public function getSessionEntityByRefreshTokenIdentifier($refreshToken);
-
-    /**
      * @param SessionEntityInterface $sessionEntity
      */
     public function persistExistingSession(SessionEntityInterface $sessionEntity);

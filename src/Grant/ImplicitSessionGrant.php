@@ -9,13 +9,26 @@
 
 namespace League\OAuth2\Server\Grant;
 
+use DateInterval;
 use League\OAuth2\Server\Grant\Traits\SessionAwareTrait;
+use League\OAuth2\Server\ResponseTypes\ResponseTypeInterface;
+use Psr\Http\Message\ServerRequestInterface;
 
 /**
  * @deprecated Use of this grant type is discouraged!
  */
 class ImplicitSessionGrant extends ImplicitGrant
 {
-    // TODO: Fix the use of trait methods using the insteadof statement.
     use SessionAwareTrait;
+
+    /**
+     * {@inheritdoc}
+     */
+    public function respondToAccessTokenRequest(
+        ServerRequestInterface $request,
+        ResponseTypeInterface $responseType,
+        DateInterval $accessTokenTTL
+    ) {
+        return parent::respondToAccessTokenRequest($request, $responseType, $accessTokenTTL);
+    }
 }

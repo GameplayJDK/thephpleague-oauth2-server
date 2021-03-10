@@ -18,6 +18,7 @@ use League\OAuth2\Server\Entities\RefreshTokenEntityInterface;
 use League\OAuth2\Server\Entities\ScopeEntityInterface;
 use League\OAuth2\Server\Entities\SessionEntityInterface;
 use League\OAuth2\Server\Exception\OAuthServerException;
+use League\OAuth2\Server\Exception\OAuthServerExtraException;
 use League\OAuth2\Server\Exception\UniqueTokenIdentifierConstraintViolationException;
 use League\OAuth2\Server\Repositories\SessionRepositoryInterface;
 use League\OAuth2\Server\RequestTypes\AuthorizationRequest;
@@ -57,9 +58,12 @@ trait SessionAwareTrait
     {
         if (null !== $sessionToken) {
             $session = $this->sessionRepository->getSessionEntityByIdentifier($sessionToken);
-        }
 
-        if (!isset($session)) {
+            if (!isset($session)) {
+                // TODO
+                throw OAuthServerExtraException::invalidSession('session not found -> invalid');
+            }
+        } else {
             $session = $this->sessionRepository->getNewSession();
         }
 
@@ -168,7 +172,7 @@ trait SessionAwareTrait
             $authorizationRequest = $this->convertToSessionCompatibleAuthorizationRequest($authorizationRequest);
 
             // Set the session token
-            $authorizationRequest->setSession($this->getRequestParameter('session', $request, null));
+            $authorizationRequest->setSession($this->getQueryStringParameter('session', $request, null));
         }
 
         return $authorizationRequest;

@@ -10,6 +10,7 @@
 namespace League\OAuth2\Server\Grant;
 
 use League\OAuth2\Server\Entities\ClientEntityInterface;
+use League\OAuth2\Server\Exception\OAuthServerExtraException;
 use League\OAuth2\Server\Grant\Traits\SessionAwareTrait;
 use Psr\Http\Message\ServerRequestInterface;
 use stdClass;
@@ -35,15 +36,16 @@ class AuthCodeSessionGrant extends AuthCodeGrant
     ) {
         parent::validateAuthorizationCode($authCodePayload, $client, $request);
 
-        // TODO: Do not use repository here, rather compare session linked contents to the id.
-        $session = $this->sessionRepository->getSessionEntityByAuthCodeIdentifier($authCodePayload->auth_code_id);
-        // The session from the auth code takes precedence over the provided session id
-        if (!\is_null($session)
-            && $this->sessionRepository->isSessionInvalidated($session->getIdentifier()) === false
-            && ($this->sessionRepository->isSessionPersisted($this->session) === false
-                || $this->session->getIdentifier() !== $session->getIdentifier())
-        ) {
-            $this->session = $session;
+        if ($this->sessionRepository->isSessionPersisted($this->session)) {
+            $linkedAuthCodes = $this->session->getLinkedAuthCodes();
+            foreach ($linkedAuthCodes as $linkedAuthCode) {
+                if ($linkedAuthCode->getIdentifier() === $authCodePayload->auth_code_id) {
+                    return;
+                }
+            }
+
+            // TODO
+            throw OAuthServerExtraException::invalidSession('given auth code not linked to provided session');
         }
     }
 }

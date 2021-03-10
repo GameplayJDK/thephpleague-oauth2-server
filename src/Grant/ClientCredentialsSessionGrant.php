@@ -10,9 +10,26 @@
 namespace League\OAuth2\Server\Grant;
 
 use League\OAuth2\Server\Grant\Traits\SessionAwareTrait;
+use League\OAuth2\Server\RequestTypes\AuthorizationRequest;
+use Psr\Http\Message\ServerRequestInterface;
 
 class ClientCredentialsSessionGrant extends ClientCredentialsGrant
 {
-    // TODO: Fix the use of trait methods using the insteadof statement.
     use SessionAwareTrait;
+
+    /**
+     * {@inheritdoc}
+     */
+    public function validateAuthorizationRequest(ServerRequestInterface $request)
+    {
+        return parent::validateAuthorizationRequest($request);
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function completeAuthorizationRequest(AuthorizationRequest $authorizationRequest)
+    {
+        return parent::completeAuthorizationRequest($authorizationRequest);
+    }
 }

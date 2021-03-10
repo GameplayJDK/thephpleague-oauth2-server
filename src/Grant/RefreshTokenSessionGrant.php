@@ -10,7 +10,9 @@
 namespace League\OAuth2\Server\Grant;
 
 use League\OAuth2\Server\Exception\OAuthServerException;
+use League\OAuth2\Server\Exception\OAuthServerExtraException;
 use League\OAuth2\Server\Grant\Traits\SessionAwareTrait;
+use League\OAuth2\Server\RequestTypes\AuthorizationRequest;
 use Psr\Http\Message\ServerRequestInterface;
 
 class RefreshTokenSessionGrant extends RefreshTokenGrant
@@ -30,18 +32,34 @@ class RefreshTokenSessionGrant extends RefreshTokenGrant
     {
         $refreshTokenData = parent::validateOldRefreshToken($request, $clientId);
 
-        // TODO: Do not use repository here, rather compare session linked contents to the id.
-        $session = $this->sessionRepository->getSessionEntityByRefreshTokenIdentifier(
-            $refreshTokenData['refresh_token_id']);
-        // The session from the auth code takes precedence over the provided session id
-        if (!\is_null($session)
-            && $this->sessionRepository->isSessionInvalidated($session->getIdentifier()) === false
-            && ($this->sessionRepository->isSessionPersisted($this->session) === false
-                || $this->session->getIdentifier() !== $session->getIdentifier())
-        ) {
-            $this->session = $session;
+        if ($this->sessionRepository->isSessionPersisted($this->session)) {
+            $linkedRefreshTokens = $this->session->getLinkedAuthCodes();
+            foreach ($linkedRefreshTokens as $linkedRefreshToken) {
+                if ($linkedRefreshToken->getIdentifier() === $refreshTokenData['refresh_token_id']) {
+                    return $refreshTokenData;
+                }
+            }
+
+            // TODO
+            throw OAuthServerExtraException::invalidSession('given refresh token not linked to provided session');
         }
 
         return $refreshTokenData;
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function validateAuthorizationRequest(ServerRequestInterface $request)
+    {
+        return parent::validateAuthorizationRequest($request);
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function completeAuthorizationRequest(AuthorizationRequest $authorizationRequest)
+    {
+        return parent::completeAuthorizationRequest($authorizationRequest);
     }
 }

@@ -54,38 +54,7 @@ class BearerTokenValidator implements AuthorizationValidatorInterface
     public function __construct(AccessTokenRepositoryInterface $accessTokenRepository = null)
     {
         if ($accessTokenRepository === null) {
-            $accessTokenRepository = new class() implements AccessTokenRepositoryInterface {
-                /**
-                 * {@inheritdoc}
-                 */
-                public function getNewToken(ClientEntityInterface $clientEntity, array $scopes, $userIdentifier = null)
-                {
-                    // TODO: Throw an exception instead of returning null.
-                    return null;
-                }
-
-                /**
-                 * {@inheritdoc}
-                 */
-                public function persistNewAccessToken(AccessTokenEntityInterface $accessTokenEntity)
-                {
-                }
-
-                /**
-                 * {@inheritdoc}
-                 */
-                public function revokeAccessToken($tokenId)
-                {
-                }
-
-                /**
-                 * {@inheritdoc}
-                 */
-                public function isAccessTokenRevoked($tokenId)
-                {
-                    return false;
-                }
-            };
+            $accessTokenRepository = new DummyAccessTokenRepository();
         }
 
         $this->accessTokenRepository = $accessTokenRepository;
@@ -181,5 +150,39 @@ class BearerTokenValidator implements AuthorizationValidatorInterface
     private function convertSingleRecordAudToString($aud)
     {
         return \is_array($aud) && \count($aud) === 1 ? $aud[0] : $aud;
+    }
+}
+
+class DummyAccessTokenRepository implements AccessTokenRepositoryInterface
+{
+    /**
+     * {@inheritdoc}
+     */
+    public function getNewToken(ClientEntityInterface $clientEntity, array $scopes, $userIdentifier = null)
+    {
+        // TODO: Throw an exception instead of returning null.
+        return null;
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function persistNewAccessToken(AccessTokenEntityInterface $accessTokenEntity)
+    {
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function revokeAccessToken($tokenId)
+    {
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function isAccessTokenRevoked($tokenId)
+    {
+        return false;
     }
 }
